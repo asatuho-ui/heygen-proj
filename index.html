@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HeyGen Avatar</title>
+<script type="module">
+import { connect } from "https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.mjs";
+
+const params = new URLSearchParams(window.location.search);
+const REALTIME_ENDPOINT = `wss://webrtc-signaling.heygen.io/v2-alpha/interactive-avatar/session/${params.get('session_id')}`;
+const ACCESS_TOKEN = params.get('access_token');
+
+async function startSession() {
+    const room = await connect(REALTIME_ENDPOINT, ACCESS_TOKEN);
+
+    room.on("trackSubscribed", (track) => {
+        if(track.kind === "video") {
+            const videoEl = document.createElement("video");
+            videoEl.autoplay = true;
+            videoEl.playsInline = true;
+            videoEl.srcObject = new MediaStream([track.mediaStreamTrack]);
+            document.body.appendChild(videoEl);
+        }
+        if(track.kind === "audio") {
+            const audioEl = document.createElement("audio");
+            audioEl.autoplay = true;
+            audioEl.srcObject = new MediaStream([track.mediaStreamTrack]);
+            document.body.appendChild(audioEl);
+        }
+    });
+
+    const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    localStream.getTracks().forEach(track => room.localParticipant.publishTrack(track));
+}
+
+window.addEventListener("DOMContentLoaded", startSession);
+</script>
+</head>
+<body>
+<h1>HeyGen Interactive Avatar</h1>
+<p>Говорите с аватаром ниже:</p>
+</body>
+</html>
